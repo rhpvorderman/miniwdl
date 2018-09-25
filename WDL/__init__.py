@@ -80,7 +80,28 @@ class _TypeTransformer(lark.Transformer):
 
 class _TaskTransformer(_ExprTransformer, _TypeTransformer):
     def decl(self, items, meta):
-        return D.Decl(sp(meta), *items)
+        assert len(items) == 2
+        type = items[0]
+        assert items[1].type == "CNAME"
+        name = items[1]
+        return D.Decl(sp(meta), type, name)
+    def quantified_decl(self, items, meta):
+        assert len(items) == 3
+        type = items[0]
+        optional = False
+        nonempty = False
+        if items[1].value == "?":
+            optional = True
+        elif items[1].value == "+":
+            nonempty = True
+        else:
+            assert False
+        assert items[2].type == "CNAME"
+        name = items[2]
+        return D.Decl(sp(meta), type, name, optional, nonempty)
+    def bound_decl(self, items, meta):
+        assert len(items) == 2
+        return items[0].bind(items[1])
     def input_decls(self, items, meta):
         return {"inputs": items}
     def noninput_decls(self, items, meta):

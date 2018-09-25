@@ -75,9 +75,11 @@ type: "Int" -> int_type
     | "String" -> string_type
     | "Array[" type "]" -> array_type
 
-unbound_decl: type CNAME -> decl
-bound_decl: type CNAME "=" expr -> decl
-?any_decl: unbound_decl | bound_decl
+decl: type CNAME
+    | type QUANT CNAME -> quantified_decl
+QUANT: "?" | "+"
+bound_decl: decl "=" expr
+?any_decl: decl | bound_decl
 
 // WDL task commands: with {} and <<< >>> command and ${} and ~{} placeholder styles
 !?placeholder_key: "default" | "false" | "true" | "sep"

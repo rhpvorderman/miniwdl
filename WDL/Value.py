@@ -38,7 +38,6 @@ class Base(ABC):
         The result is undefined if the coercion is not valid. Types should be
         checked statically on ``WDL.Expr`` prior to evaluation.
         """
-        assert desired_type is None or self.type == desired_type
         return self
     def expect(self, desired_type : Optional[T.Base] = None) -> BaseT:
         """Same as coerce"""
@@ -79,3 +78,14 @@ class Array(Base):
         super().__init__(type, value)
     def __str__(self) -> str:
         return "[" + ", ".join([str(item) for item in self.value]) + "]"
+
+class Null(Base):
+    type : Optional[Any] # pyre-ignore
+    value : Optional[Any] # pyre-ignore
+    """Represents the missing value which optional inputs may take on. ``type`` and ``value`` are both None."""
+    def __init__(self) -> None:
+        self.type = None
+        self.value = None
+        pass
+    def __str__(self) -> str:
+        return ""

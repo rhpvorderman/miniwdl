@@ -198,15 +198,15 @@ class TestDoc(unittest.TestCase):
         task = WDL.parse_task("""
         task wc {
             input {
-                Boolean b
-                Int n
+                Boolean? b
+                Array[Int]+ n
             }
             parameter_meta {
                 b: { help: "it's a boolean" }
                 n: 'x'
             }
             command {
-                echo "~{true='yes' false='no' b}"
+                echo "~{b}"
             }
             runtime {
                 memory: "1 GB"
@@ -217,3 +217,21 @@ class TestDoc(unittest.TestCase):
         task.typecheck()
         self.assertEqual(task.parameter_meta['b']['help'], "it's a boolean")
         self.assertEqual(task.runtime['cpu'], 42)
+        self.assertTrue(task.inputs[0].optional)
+        self.assertFalse(task.inputs[0].nonempty)
+        self.assertFalse(task.inputs[1].optional)
+        self.assertTrue(task.inputs[1].nonempty)
+
+        self.assertEqual(task.command.parts[1].eval(WDL.Expr.Env(('b', WDL.Value.Null()))).value, '')
+
+        with self.assertRaises(WDL.Error.IncompatibleOperand):
+            WDL.parse_task("""
+            task wc {
+                input {
+                    Boolean+ b
+                }
+                command <<<
+                    echo "~{b} baz"
+                >>>
+            }
+            """).typecheck()

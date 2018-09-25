@@ -9,24 +9,40 @@ from typing import Any, List, Optional, Dict, Callable, TypeVar, Tuple, Union
 import WDL.Type as T
 import WDL.Value as V
 import WDL.Expr as E
+import WDL.Error as Error
 from WDL.Error import SourcePosition, SourceNode
 
+TVDecl = TypeVar("TVDecl", bound="Decl")
 class Decl(SourceNode):
-    """A declaration, consisting of a type, name, and (optionally) an expression"""
+    """
+    A declaration, consisting of a type, name, and (optionally) an expression.
+    Additionally, the type may have quantity constraints (optional/nonempty).
+    """
     type : T.Base
     name : str
+    optional : bool
+    nonempty : bool
     expr : Optional[E.Base]
 
-    def __init__(self, pos : SourcePosition, type : T.Base, name: str, expr : Optional[E.Base] = None) -> None:
+    def __init__(self, pos : SourcePosition, type : T.Base, name: str, optional : bool = False, nonempty : bool = False, expr : Optional[E.Base] = None) -> None:
         super().__init__(pos)
         self.type = type
         self.name = name
+        self.optional = optional
+        self.nonempty = nonempty
         self.expr = expr
+
+        if self.nonempty and not isinstance(type, T.Array):
+            raise Error.IncompatibleOperand(self, "nonempty quantifier (+) on non-Array type")
 
     def __str__(self) -> str:
         if self.expr is None:
             return "{} {}".format(str(self.type), self.name)
         return "{} {} = {}".format(str(self.type), self.name, str(self.expr))
+
+    def bind(self, expr : E.Base) -> TVDecl:
+        return Decl(self.pos, self.type, self.name, self.optional, self.nonempty, expr)
+
 
 class Task(SourceNode):
     """WDL Task"""
