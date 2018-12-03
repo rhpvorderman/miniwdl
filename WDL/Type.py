@@ -89,6 +89,7 @@ class Base(ABC):
         """
         ans: Base = copy.copy(self)
         assert ans._optional == self._optional
+        assert ans._check_quant == self._check_quant
         if optional is not None:
             ans._optional = optional
         return ans

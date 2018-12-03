@@ -55,13 +55,7 @@ class Decl(SourceNode):
             raise Err.MultipleDefinitions(self, "Multiple declarations of " + self.name)
         except KeyError:
             pass
-        # Subtlety: if the declared type is optional, but the expression is
-        # some literal value, make a non-optional entry in the type env since
-        # the value won't actually be null at runtime
-        ty = self.type
-        if isinstance(self.expr, (E.Int, E.Float, E.String, E.Array, E.Pair, E.Map)):
-            ty = ty.copy(optional=False)
-        ans: Env.Types = Env.bind(self.name, ty, type_env, ctx=self)
+        ans: Env.Types = Env.bind(self.name, self.type, type_env, ctx=self)
         return ans
 
     def typecheck(self, type_env: Env.Types) -> None:
@@ -285,13 +279,7 @@ class Call(SourceNode):
                         decl = ele
             if decl is None:
                 raise Err.NoSuchInput(expr, name)
-            check_type = decl.type
-            if isinstance(check_type, T.Array):
-                # Accept Array[T] value for Array[T]+ input in static
-                # typechecking; e.g.
-                # https://github.com/gatk-workflows/gatk4-somatic-snvs-indels/blob/28132cbec2fc9178e50cd3a36aa8f94023619428/mutect2.wdl#L255
-                check_type = check_type.copy(nonempty=False)
-            expr.infer_type(type_env).typecheck(check_type)
+            expr.infer_type(type_env).typecheck(decl.type)
             if name in required_inputs:
                 required_inputs.remove(name)
 
@@ -561,7 +549,9 @@ def load(
                 for i in range(len(doc.imports)):
                     try:
                         subpath = [os.path.dirname(fn)] + path
-                        subdoc = load(doc.imports[i][0], subpath, True)
+                        subdoc = load(
+                            doc.imports[i][0], subpath, check_quant=check_quant, imported=True
+                        )
                     except Exception as exn:
                         raise Err.ImportError(uri, doc.imports[i][0]) from exn
                     doc.imports[i] = (doc.imports[i][0], doc.imports[i][1], subdoc)
