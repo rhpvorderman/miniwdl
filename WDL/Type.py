@@ -201,8 +201,10 @@ class Array(Base):
         if isinstance(rhs, Array):
             if self.item_type is None or rhs.item_type is None:
                 return True
-            return self.item_type.coerces(rhs.item_type) and (
-                not self._check_quant or not rhs.nonempty or self.nonempty
+            return (
+                self.item_type.coerces(rhs.item_type)
+                and self._optional_coerces(rhs)
+                and (not self._check_quant or not rhs.nonempty or self.nonempty)
             )
         if isinstance(rhs, String):
             return self.item_type is None or self.item_type.coerces(String())
