@@ -21,7 +21,9 @@ def load(uri: str, path: List[str] = []) -> Document:
     return Tree.load(uri, path)
 
 
-def parse_document(txt: str, version: Optional[str] = None, uri: str = "") -> Document:
+def parse_document(
+    txt: str, version: Optional[str] = None, check_quant: bool = True, uri: str = ""
+) -> Document:
     """
     Parse WDL document text into an abstract syntax tree. Doesn't descend into
     imported documents nor typecheck the AST.
@@ -31,7 +33,7 @@ def parse_document(txt: str, version: Optional[str] = None, uri: str = "") -> Do
     of the document, per the WDL spec.)
     :param uri: filename/URI for error reporting (not otherwise used)
     """
-    return _parser.parse_document(txt, version, uri)
+    return _parser.parse_document(txt, version=version, check_quant=check_quant, uri=uri)
 
 
 def parse_expr(txt: str, version: Optional[str] = None) -> Expr.Base:

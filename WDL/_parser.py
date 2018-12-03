@@ -361,38 +361,40 @@ for op in [
 class _TypeTransformer(lark.Transformer):
     # pylint: disable=no-self-use,unused-argument
 
-    def __init__(self, file: str) -> None:
-        self.filename = file
+    check_quant: bool
+
+    def __init__(self, check_quant: bool) -> None:
+        self.check_quant = check_quant
 
     def int_type(self, items, meta):
         optional = False
         if items and items[0].value == "?":
             optional = True
-        return T.Int(optional)
+        return T.Int(optional=optional, check_quant=self.check_quant)
 
     def float_type(self, items, meta):
         optional = False
         if items and items[0].value == "?":
             optional = True
-        return T.Float(optional)
+        return T.Float(optional=optional, check_quant=self.check_quant)
 
     def boolean_type(self, items, meta):
         optional = False
         if items and items[0].value == "?":
             optional = True
-        return T.Boolean(optional)
+        return T.Boolean(optional=optional, check_quant=self.check_quant)
 
     def string_type(self, items, meta):
         optional = False
         if items and items[0].value == "?":
             optional = True
-        return T.String(optional)
+        return T.String(optional=optional, check_quant=self.check_quant)
 
     def file_type(self, items, meta):
         optional = False
         if items and items[0].value == "?":
             optional = True
-        return T.File(optional)
+        return T.File(optional=optional, check_quant=self.check_quant)
 
     def array_type(self, items, meta):
         assert len(items) >= 1
@@ -404,7 +406,7 @@ class _TypeTransformer(lark.Transformer):
                 optional = True
             if c == "+":
                 nonempty = True
-        return T.Array(items[0], optional, nonempty)
+        return T.Array(items[0], optional=optional, nonempty=nonempty, check_quant=self.check_quant)
 
     def map_type(self, items, meta):
         assert len(items) >= 2
@@ -414,7 +416,7 @@ class _TypeTransformer(lark.Transformer):
         if len(items) > 2:
             if items[2].value == "?":
                 optional = True
-        return T.Map((items[0], items[1]), optional)
+        return T.Map((items[0], items[1]), optional=optional, check_quant=self.check_quant)
 
     def pair_type(self, items, meta):
         assert len(items) >= 2
@@ -424,15 +426,16 @@ class _TypeTransformer(lark.Transformer):
         if len(items) > 2:
             if items[2].value == "?":
                 optional = True
-        return T.Pair(items[0], items[1], optional)
+        return T.Pair(items[0], items[1], optional=optional, check_quant=self.check_quant)
 
 
 class _DocTransformer(_ExprTransformer, _TypeTransformer):
     # pylint: disable=no-self-use,unused-argument
 
-    def __init__(self, file: str, imported: bool) -> None:
+    def __init__(self, check_quant: bool, file: str, imported: bool) -> None:
         # pylint: disable=super-init-not-called
-        self.filename = file
+        _ExprTransformer.__init__(self, file)
+        _TypeTransformer.__init__(self, check_quant)
         self.imported = imported
 
     def decl(self, items, meta):
@@ -667,11 +670,15 @@ def parse_expr(txt: str, version: Optional[str] = None) -> E.Base:
 
 def parse_tasks(txt: str, version: Optional[str] = None) -> List[D.Task]:
     # pyre-fixme
-    return _DocTransformer("", False).transform(parse(txt, "tasks", version))
+    return _DocTransformer(True, "", False).transform(parse(txt, "tasks", version))
 
 
 def parse_document(
-    txt: str, version: Optional[str] = None, uri: str = "", imported: bool = False
+    txt: str,
+    version: Optional[str] = None,
+    check_quant: bool = True,
+    uri: str = "",
+    imported: bool = False,
 ) -> D.Document:
     if version is None:
         # for now assume the version is 1.0 if the first line is "version <number>"
@@ -692,7 +699,9 @@ def parse_document(
             imported,
         )
     try:
-        return _DocTransformer(uri, imported).transform(parse(txt, "document", version))
+        return _DocTransformer(check_quant, uri, imported).transform(
+            parse(txt, "document", version)
+        )
     except lark.exceptions.UnexpectedCharacters as exn:
         raise Err.ParserError(uri if uri != "" else "(in buffer)") from exn
     except lark.exceptions.UnexpectedToken as exn:

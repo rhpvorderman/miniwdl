@@ -541,12 +541,19 @@ class Document(SourceNode):
             self.workflow.typecheck(self)
 
 
-def load(uri: str, path: List[str] = [], imported: Optional[bool] = False) -> Document:
+def load(
+    uri: str,
+    path: List[str] = [],
+    check_quant: Optional[bool] = True,
+    imported: Optional[bool] = False,
+) -> Document:
     for fn in [uri] + [os.path.join(dn, uri) for dn in reversed(path)]:
         if os.path.exists(fn):
             with open(fn, "r") as infile:
                 # read and parse the document
-                doc = WDL._parser.parse_document(infile.read(), uri=uri, imported=imported)
+                doc = WDL._parser.parse_document(
+                    infile.read(), check_quant=check_quant, uri=uri, imported=imported
+                )
                 assert isinstance(doc, Document)
                 # recursively descend into document's imports, and store the imported
                 # documents into doc.imports
