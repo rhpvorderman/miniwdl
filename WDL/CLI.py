@@ -1,6 +1,7 @@
 """
 miniwdl command-line interface
 """
+# PYTHON_ARGCOMPLETE_OK
 import sys
 import os
 import subprocess
@@ -10,6 +11,7 @@ import json
 from shlex import quote as shellquote
 from datetime import datetime
 from argparse import ArgumentParser
+import argcomplete
 import WDL
 import WDL.Lint
 
@@ -24,6 +26,7 @@ def main(args=None):
     fill_common(fill_check_subparser(subparsers))
     fill_common(fill_cromwell_subparser(subparsers))
 
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(args if args is not None else sys.argv[1:])
 
     try:
