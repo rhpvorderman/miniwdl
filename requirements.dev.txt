@@ -11,3 +11,5 @@ python-coveralls
 wheel
 pbr
 twine
+pysam
+biopython
